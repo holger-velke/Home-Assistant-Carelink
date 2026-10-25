@@ -43,6 +43,13 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         except Exception:
             _LOGGER.warning("Failed to close Carelink client during validation")
 
+    await validate_nightscout_input(data)
+
+    return {"title": "Carelink"}
+
+
+async def validate_nightscout_input(data: dict[str, Any]) -> None:
+    """Validate the optional Nightscout uploader configuration."""
     nightscout_url = data.setdefault("nightscout_url", None)
     nightscout_api = data.setdefault("nightscout_api", None)
 
@@ -72,8 +79,6 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
                 await uploader.close()
             except Exception:
                 _LOGGER.warning("Failed to close Nightscout uploader during validation")
-
-    return {"title": "Carelink"}
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -149,7 +154,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             full_config = {**entry.data, **user_input}
 
             try:
-                await validate_input(self.hass, full_config)
+                await validate_nightscout_input(full_config)
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             except InvalidAuth:

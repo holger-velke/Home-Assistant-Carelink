@@ -7,6 +7,7 @@ from custom_components.carelink.config_flow import (
     CannotConnect,
     InvalidAuth,
     validate_input,
+    validate_nightscout_input,
 )
 
 
@@ -252,3 +253,26 @@ class TestExceptionClasses:
         """Test InvalidAuth exception can be raised."""
         with pytest.raises(InvalidAuth):
             raise InvalidAuth()
+
+
+class TestNightscoutValidation:
+    """Tests for validating Nightscout independently of Carelink auth."""
+
+    async def test_nightscout_validation_does_not_require_carelink_auth(self):
+        """Nightscout settings can be checked without Carelink tokens."""
+        with patch(
+            "custom_components.carelink.config_flow.NightscoutUploader"
+        ) as mock_uploader_class:
+            mock_uploader = MagicMock()
+            mock_uploader.reachServer = AsyncMock(return_value=True)
+            mock_uploader.close = AsyncMock()
+            mock_uploader_class.return_value = mock_uploader
+
+            await validate_nightscout_input(
+                {
+                    "nightscout_url": "http://nightscout.example.com",
+                    "nightscout_api": "new-secret",
+                }
+            )
+
+        mock_uploader.reachServer.assert_called_once()
